@@ -1,11 +1,44 @@
 // src/pages/DashboardPage.jsx
+import { useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Search, User, CheckCircle, Clock, Heart, Star, ArrowRight } from 'lucide-react';
+import { Search, User, CheckCircle, Clock, Heart, Star, ArrowRight, Camera, Upload } from 'lucide-react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://empmatrimony-backend-production.up.railway.app/api/v1';
 
 export default function DashboardPage() {
   const { user } = useSelector((s) => s.auth);
   const completionPercent = Math.round((user?.profileCompletionStep || 0) / 5 * 100);
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef();
+
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await axios.post(`${API_URL}/documents/profile-picture`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setPhotoUrl(res.data.data.url);
+      toast.success('Profile photo uploaded!');
+    } catch (error) {
+      toast.error('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const quickActions = [
     { to: '/search', icon: Search, label: 'Find Matches', desc: 'Search for your ideal partner', color: '#c8962d' },
@@ -22,20 +55,72 @@ export default function DashboardPage() {
       }}>
         <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'rgba(200,150,45,0.08)' }} />
         <div style={{ position: 'absolute', right: 40, bottom: -60, width: 150, height: 150, borderRadius: '50%', background: 'rgba(200,150,45,0.05)' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <p style={{ color: '#c8962d', fontSize: 14, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Welcome back</p>
-          <h1 style={{ fontSize: 36, fontWeight: 700, color: '#f5f0e8', fontFamily: "'Cormorant Garamond', serif", marginBottom: 8 }}>
-            {user?.firstName} {user?.lastName}
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {user?.accountStatus === 'active'
-                ? <><CheckCircle size={16} color="#22c55e" /> <span style={{ color: '#22c55e', fontSize: 14 }}>Account Active</span></>
-                : <><Clock size={16} color="#f59e0b" /> <span style={{ color: '#f59e0b', fontSize: 14 }}>Pending Approval</span></>}
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 28 }}>
+          {/* Profile Photo */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{
+              width: 90, height: 90, borderRadius: '50%',
+              border: '3px solid rgba(200,150,45,0.6)',
+              overflow: 'hidden', background: 'rgba(200,150,45,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {photoUrl
+                ? <img src={photoUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : <User size={40} color="#c8962d" />
+              }
             </div>
-            <div style={{ color: '#9a8f7e', fontSize: 14 }}>
-              Plan: <span style={{ color: '#f0c050', textTransform: 'capitalize' }}>{user?.subscriptionPlan || 'Free'}</span>
+            {/* Upload Button */}
+            <button
+              onClick={() => fileInputRef.current.click()}
+              disabled={uploading}
+              style={{
+                position: 'absolute', bottom: 0, right: 0,
+                width: 28, height: 28, borderRadius: '50%',
+                background: uploading ? '#888' : 'linear-gradient(135deg,#c8962d,#f0c050)',
+                border: '2px solid #1a1a2e',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: uploading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {uploading ? '...' : <Camera size={13} color="#1a1a00" />}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handlePhotoUpload}
+            />
+          </div>
+
+          <div>
+            <p style={{ color: '#c8962d', fontSize: 14, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 8 }}>Welcome back</p>
+            <h1 style={{ fontSize: 36, fontWeight: 700, color: '#f5f0e8', fontFamily: "'Cormorant Garamond', serif", marginBottom: 8 }}>
+              {user?.firstName} {user?.lastName}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {user?.accountStatus === 'active'
+                  ? <><CheckCircle size={16} color="#22c55e" /> <span style={{ color: '#22c55e', fontSize: 14 }}>Account Active</span></>
+                  : <><Clock size={16} color="#f59e0b" /> <span style={{ color: '#f59e0b', fontSize: 14 }}>Pending Approval</span></>}
+              </div>
+              <div style={{ color: '#9a8f7e', fontSize: 14 }}>
+                Plan: <span style={{ color: '#f0c050', textTransform: 'capitalize' }}>{user?.subscriptionPlan || 'Free'}</span>
+              </div>
             </div>
+            {!photoUrl && (
+              <button
+                onClick={() => fileInputRef.current.click()}
+                style={{
+                  marginTop: 12, display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(200,150,45,0.15)', border: '1px dashed rgba(200,150,45,0.5)',
+                  color: '#c8962d', padding: '7px 14px', borderRadius: 8, fontSize: 13,
+                  fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                <Upload size={14} /> Upload Profile Photo
+              </button>
+            )}
           </div>
         </div>
       </div>
