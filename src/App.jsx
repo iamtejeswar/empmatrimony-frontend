@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import store from './store';
 import { useSelector } from 'react-redux';
-
+import GoogleSuccessPage from './pages/GoogleSuccessPage';
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -50,7 +50,7 @@ function AppRoutes() {
           <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
           <Route path="/profile/:userId" element={<ProtectedRoute><ProfileViewPage /></ProtectedRoute>} />
         </Route>
-
+         <Route path="/auth/google/success" element={<GoogleSuccessPage />} />
         {/* Admin Routes */}
         <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
 
