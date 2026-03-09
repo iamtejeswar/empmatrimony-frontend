@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { sendOTP, verifyOTP, loginWithOTP, googleAuth, clearError, clearOTPState } from '../store/authSlice';
-import { Heart, Mail, Key, ArrowRight, Loader2, Chrome } from 'lucide-react';
+import { Heart, Mail, Key, ArrowRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState('email'); // email | otp
+  const [step, setStep] = useState('email');
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -51,7 +51,7 @@ export default function LoginPage() {
     dispatch(verifyOTP({ email, otp }));
   };
 
- const handleGoogleLogin = () => {
+  const handleGoogleLogin = () => {
     window.location.href = 'https://empmatrimony-backend-production.up.railway.app/api/v1/auth/google';
   };
 
@@ -60,25 +60,57 @@ export default function LoginPage() {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #0d1257 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontFamily: "'Inter', sans-serif", padding: 24,
+      fontFamily: "'Inter', sans-serif",
+      padding: '24px 16px',
       position: 'relative', overflow: 'hidden',
+      boxSizing: 'border-box',
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
-        .auth-input { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(200,150,45,0.3); border-radius: 12px; padding: 14px 16px; color: #f5f0e8; font-size: 15px; font-family: Inter, sans-serif; outline: none; transition: all 0.2s; }
+        *, *::before, *::after { box-sizing: border-box; }
+        .auth-input {
+          width: 100%;
+          box-sizing: border-box;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(200,150,45,0.3);
+          border-radius: 12px;
+          padding: 14px 16px 14px 44px;
+          color: #f5f0e8;
+          font-size: 15px;
+          font-family: Inter, sans-serif;
+          outline: none;
+          transition: all 0.2s;
+        }
         .auth-input:focus { border-color: #c8962d; background: rgba(200,150,45,0.08); box-shadow: 0 0 0 3px rgba(200,150,45,0.1); }
         .auth-input::placeholder { color: #5a5050; }
         .otp-input { letter-spacing: 12px; text-align: center; font-size: 24px; font-weight: 700; }
-        .btn-primary { width: 100%; background: linear-gradient(135deg, #c8962d, #f0c050); color: #1a1a00; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+        .btn-primary {
+          width: 100%;
+          box-sizing: border-box;
+          background: linear-gradient(135deg, #c8962d, #f0c050);
+          color: #1a1a00; border: none; padding: 14px; border-radius: 12px;
+          font-size: 15px; font-weight: 700; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          transition: all 0.2s;
+        }
         .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(200,150,45,0.4); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-google { width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: #f5f0e8; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.2s; }
+        .btn-google {
+          width: 100%;
+          box-sizing: border-box;
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.15);
+          color: #f5f0e8; padding: 14px; border-radius: 12px;
+          font-size: 15px; font-weight: 500; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: all 0.2s;
+        }
         .btn-google:hover { background: rgba(255,255,255,0.12); }
+        .input-wrapper { position: relative; width: 100%; }
+        .input-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9a8f7e; pointer-events: none; }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
-        @keyframes pulse-glow { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
       `}</style>
 
-      {/* Background decorations */}
       {[...Array(5)].map((_, i) => (
         <div key={i} style={{
           position: 'absolute',
@@ -96,7 +128,7 @@ export default function LoginPage() {
 
       <div style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 1 }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             width: 72, height: 72, borderRadius: '50%', margin: '0 auto 16px',
             background: 'linear-gradient(135deg, #c8962d, #f0c050)',
@@ -105,7 +137,7 @@ export default function LoginPage() {
           }}>
             <Heart size={32} color="#1a1a00" fill="#1a1a00" />
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 700, color: '#f0c050', fontFamily: "'Cormorant Garamond', serif", marginBottom: 8 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: '#f0c050', fontFamily: "'Cormorant Garamond', serif", marginBottom: 8 }}>
             MatrimonyPlatform
           </h1>
           <p style={{ color: '#9a8f7e', fontSize: 14 }}>Find your perfect life partner</p>
@@ -117,40 +149,41 @@ export default function LoginPage() {
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(200,150,45,0.25)',
           borderRadius: 24,
-          padding: 40,
+          padding: '32px 28px',
           boxShadow: '0 40px 80px rgba(0,0,0,0.4)',
+          width: '100%',
+          boxSizing: 'border-box',
         }}>
-          <h2 style={{ fontSize: 24, fontWeight: 600, color: '#f5f0e8', marginBottom: 8 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 600, color: '#f5f0e8', marginBottom: 6 }}>
             {step === 'email' ? 'Welcome back' : 'Enter OTP'}
           </h2>
-          <p style={{ color: '#9a8f7e', fontSize: 14, marginBottom: 32 }}>
+          <p style={{ color: '#9a8f7e', fontSize: 14, marginBottom: 28 }}>
             {step === 'email'
               ? 'Sign in to your account using OTP'
               : `We sent a 6-digit code to ${email}`}
           </p>
 
           {step === 'email' ? (
-            <form onSubmit={handleSendOTP}>
-              <div style={{ marginBottom: 20 }}>
+            <form onSubmit={handleSendOTP} style={{ width: '100%' }}>
+              <div style={{ marginBottom: 20, width: '100%' }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#c8962d', marginBottom: 8, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   Email Address
                 </label>
-                <div style={{ position: 'relative' }}>
-                  <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9a8f7e' }} />
+                <div className="input-wrapper">
+                  <Mail size={16} className="input-icon" />
                   <input
                     className="auth-input"
                     type="email"
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    style={{ paddingLeft: 44 }}
                     required
                   />
                 </div>
               </div>
 
               <button type="submit" className="btn-primary" disabled={loading}>
-                {loading ? <Loader2 size={18} className="animate-spin" /> : <>Send OTP <ArrowRight size={16} /></>}
+                {loading ? <Loader2 size={18} /> : <>Send OTP <ArrowRight size={16} /></>}
               </button>
 
               <div style={{ margin: '24px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -170,13 +203,13 @@ export default function LoginPage() {
               </button>
             </form>
           ) : (
-            <form onSubmit={handleVerifyOTP}>
-              <div style={{ marginBottom: 20 }}>
+            <form onSubmit={handleVerifyOTP} style={{ width: '100%' }}>
+              <div style={{ marginBottom: 20, width: '100%' }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#c8962d', marginBottom: 8, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                   One Time Password
                 </label>
-                <div style={{ position: 'relative' }}>
-                  <Key size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9a8f7e' }} />
+                <div className="input-wrapper">
+                  <Key size={16} className="input-icon" />
                   <input
                     className="auth-input otp-input"
                     type="text"
@@ -184,7 +217,6 @@ export default function LoginPage() {
                     placeholder="000000"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    style={{ paddingLeft: 44 }}
                     required
                   />
                 </div>
@@ -206,7 +238,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          <p style={{ textAlign: 'center', marginTop: 28, color: '#5a5050', fontSize: 14 }}>
+          <p style={{ textAlign: 'center', marginTop: 24, color: '#5a5050', fontSize: 14 }}>
             Don't have an account?{' '}
             <Link to="/register" style={{ color: '#c8962d', fontWeight: 600 }}>Create one</Link>
           </p>
