@@ -1,11 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { setCredentials } from '../store/authSlice';
 
 export default function GoogleSuccessPage() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -17,10 +14,9 @@ export default function GoogleSuccessPage() {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
-      dispatch(setCredentials({ accessToken, refreshToken, user }));
-      navigate(user.isProfileComplete ? '/dashboard' : '/profile/complete', { replace: true });
+      window.location.href = user.isProfileComplete ? '/dashboard' : '/profile/complete';
     } else {
-      navigate('/login', { replace: true });
+      window.location.href = '/login';
     }
   }, []);
 
