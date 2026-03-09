@@ -51,10 +51,8 @@ export default function LoginPage() {
     dispatch(verifyOTP({ email, otp }));
   };
 
-  const handleGoogleLogin = async () => {
-    toast('Google Sign-In requires Google OAuth setup. Use OTP login for demo.', { icon: 'ℹ️' });
-    // In production: use Google Identity Services
-    // google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: ({ credential }) => dispatch(googleAuth(credential)) });
+ const handleGoogleLogin = () => {
+    window.location.href = 'https://empmatrimony-backend-production.up.railway.app/api/v1/auth/google';
   };
 
   return (
