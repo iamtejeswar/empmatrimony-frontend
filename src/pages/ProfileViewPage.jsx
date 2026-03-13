@@ -1,11 +1,14 @@
 // src/pages/ProfileViewPage.jsx
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { profileAPI } from '../services/api';
 import { ArrowLeft, User, MapPin, Briefcase, Star, Users, Loader2 } from 'lucide-react';
+import InterestButton from '../components/InterestButton';
 
 export default function ProfileViewPage() {
   const { userId } = useParams();
+  const { user: currentUser } = useSelector((s) => s.auth);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,6 +40,7 @@ export default function ProfileViewPage() {
   ) : null;
 
   const age = profile.dateOfBirth ? Math.floor((new Date() - new Date(profile.dateOfBirth)) / (365.25 * 24 * 3600 * 1000)) : null;
+  const isOwnProfile = currentUser?.id === userId;
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
@@ -45,18 +49,25 @@ export default function ProfileViewPage() {
 
       {/* Profile Header */}
       <div style={{ background: 'linear-gradient(135deg,rgba(26,35,126,0.8),rgba(200,150,45,0.2))', border: '1px solid rgba(200,150,45,0.3)', borderRadius: 24, padding: 40, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 32 }}>
-        <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'rgba(200,150,45,0.1)', border: '2px solid rgba(200,150,45,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <User size={48} color="rgba(200,150,45,0.5)" />
+        <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'rgba(200,150,45,0.1)', border: '2px solid rgba(200,150,45,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+          {profile.personalDetails?.profilePictureUrl
+            ? <img src={profile.personalDetails.profilePictureUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <User size={48} color="rgba(200,150,45,0.5)" />
+          }
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: 34, fontWeight: 700, color: '#f5f0e8', fontFamily: "'Cormorant Garamond', serif", marginBottom: 4 }}>
             {profile.firstName} {profile.lastName?.[0]}.
           </h1>
           {age && <p style={{ color: '#c8962d', fontSize: 16, marginBottom: 8 }}>{age} years old</p>}
-          <div style={{ display: 'flex', gap: 20 }}>
+          <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
             {profile.familyDetails?.city && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><MapPin size={13} color="#c8962d" />{profile.familyDetails.city}</span>}
             {profile.employmentDetails?.jobRole && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><Briefcase size={13} color="#c8962d" />{profile.employmentDetails.jobRole}</span>}
           </div>
+          {/* Interest Button — only show if viewing someone else's profile */}
+          {!isOwnProfile && (
+            <InterestButton profileId={userId} />
+          )}
         </div>
       </div>
 
@@ -87,16 +98,6 @@ export default function ProfileViewPage() {
           <Field label="Job Role" value={profile.employmentDetails.jobRole} />
         </Section>
       )}
-
-      {/* Premium CTA */}
-      <div style={{ background: 'linear-gradient(135deg,rgba(200,150,45,0.15),rgba(200,150,45,0.05))', border: '1px solid rgba(200,150,45,0.4)', borderRadius: 20, padding: 32, textAlign: 'center' }}>
-        <p style={{ fontSize: 24, marginBottom: 8 }}>👑</p>
-        <h3 style={{ color: '#f0c050', fontSize: 20, fontWeight: 700, fontFamily: "'Cormorant Garamond', serif", marginBottom: 8 }}>Upgrade to Premium</h3>
-        <p style={{ color: '#9a8f7e', fontSize: 14, marginBottom: 20 }}>View photos, contact details, and send interests</p>
-        <button style={{ background: 'linear-gradient(135deg,#c8962d,#f0c050)', border: 'none', color: '#1a1a00', padding: '12px 32px', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
-          Upgrade Now
-        </button>
-      </div>
     </div>
   );
 }

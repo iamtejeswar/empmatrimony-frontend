@@ -22,6 +22,7 @@ export default function MainLayout() {
   const navLinks = [
     { to: '/dashboard', icon: Home, label: 'Home' },
     { to: '/search', icon: Search, label: 'Find Match' },
+    { to: '/interests', icon: Heart, label: 'Interests' },
     ...(user?.role === 'admin' ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ];
 
@@ -53,6 +54,13 @@ export default function MainLayout() {
         .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #1a1a00; border: none; padding: 10px 24px; border-radius: 10px; cursor: pointer; font-weight: 600; font-family: Inter, sans-serif; font-size: 14px; transition: all 0.2s; }
         .btn-gold:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(200,150,45,0.3); }
         .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; }
+        .btn-interest { padding: 10px 20px; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; font-family: Inter, sans-serif; font-size: 14px; transition: all 0.2s; }
+        .btn-interest.send { background: linear-gradient(135deg, #c8962d, #f0c050); color: #1a1a00; }
+        .btn-interest.send:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(200,150,45,0.3); }
+        .btn-interest.pending { background: rgba(245,127,23,0.15); color: #f57f17; border: 1px solid rgba(245,127,23,0.3); }
+        .btn-interest.accepted { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
+        .btn-interest.rejected { background: rgba(244,67,54,0.15); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
+        .btn-interest.disabled { background: rgba(255,255,255,0.05); color: #666; }
       `}</style>
 
       {/* Navbar */}
