@@ -2,18 +2,40 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { searchAPI } from '../services/api';
-import { Search, Filter, User, MapPin, Briefcase, Star, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Search, Filter, User, MapPin, Briefcase, Star, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const iStyle = { width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,150,45,0.25)', borderRadius: 8, padding: '10px 12px', color: '#f5f0e8', fontSize: 13, fontFamily: 'Inter, sans-serif', outline: 'none' };
 const lStyle = { display: 'block', fontSize: 11, fontWeight: 600, color: '#c8962d', marginBottom: 5, letterSpacing: '0.5px', textTransform: 'uppercase' };
 
-function FilterPanel({ filters, setFilters, onSearch }) {
+// Score color helper
+const scoreColor = (score) => {
+  if (score >= 80) return { bg: 'rgba(34,197,94,0.15)', border: 'rgba(34,197,94,0.4)', text: '#22c55e' };
+  if (score >= 60) return { bg: 'rgba(200,150,45,0.15)', border: 'rgba(200,150,45,0.4)', text: '#f0c050' };
+  if (score >= 40) return { bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)', text: '#f59e0b' };
+  return { bg: 'rgba(156,163,175,0.1)', border: 'rgba(156,163,175,0.3)', text: '#9ca3af' };
+};
+
+const scoreLabel = (score) => {
+  if (score >= 80) return 'Excellent Match';
+  if (score >= 60) return 'Good Match';
+  if (score >= 40) return 'Fair Match';
+  return 'Low Match';
+};
+
+function FilterPanel({ filters, setFilters, onSearch, onClose }) {
   return (
-    <div style={{ background: 'rgba(26,26,46,0.8)', border: '1px solid rgba(200,150,45,0.2)', borderRadius: 16, padding: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-        <Filter size={16} color="#c8962d" />
-        <h3 style={{ color: '#f0c050', fontSize: 16, fontWeight: 700 }}>Filters</h3>
+    <div style={{ background: 'rgba(26,26,46,0.95)', border: '1px solid rgba(200,150,45,0.2)', borderRadius: 16, padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Filter size={16} color="#c8962d" />
+          <h3 style={{ color: '#f0c050', fontSize: 16, fontWeight: 700 }}>Filters</h3>
+        </div>
+        {onClose && (
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9a8f7e', cursor: 'pointer', padding: 4 }}>
+            <X size={18} />
+          </button>
+        )}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div><label style={lStyle}>Gender</label><select style={iStyle} value={filters.gender} onChange={e => setFilters({...filters, gender: e.target.value})}><option value="">Any</option><option value="male">Male</option><option value="female">Female</option></select></div>
@@ -25,13 +47,27 @@ function FilterPanel({ filters, setFilters, onSearch }) {
         <div><label style={lStyle}>Employment</label><select style={iStyle} value={filters.employmentType} onChange={e => setFilters({...filters, employmentType: e.target.value})}><option value="">Any</option><option value="state_government">State Govt</option><option value="central_government">Central Govt</option><option value="psu">PSU</option><option value="banking">Banking</option><option value="private">Private</option><option value="self_employed">Self Employed</option></select></div>
         <div><label style={lStyle}>City</label><input style={iStyle} placeholder="Chennai, Mumbai..." value={filters.city} onChange={e => setFilters({...filters, city: e.target.value})} /></div>
         <div><label style={lStyle}>State</label><input style={iStyle} placeholder="Tamil Nadu..." value={filters.state} onChange={e => setFilters({...filters, state: e.target.value})} /></div>
-        <button onClick={onSearch} style={{ width: '100%', background: 'linear-gradient(135deg,#c8962d,#f0c050)', border: 'none', color: '#1a1a00', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <button onClick={() => { onSearch(); onClose?.(); }} style={{ width: '100%', background: 'linear-gradient(135deg,#c8962d,#f0c050)', border: 'none', color: '#1a1a00', padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Search size={15} /> Search
         </button>
         <button onClick={() => setFilters({ gender:'',minAge:'',maxAge:'',religion:'',caste:'',maritalStatus:'',employmentType:'',city:'',state:'' })} style={{ width: '100%', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#9a8f7e', padding: '10px', borderRadius: 10, cursor: 'pointer', fontSize: 13 }}>
           Clear Filters
         </button>
       </div>
+    </div>
+  );
+}
+
+function MatchScoreBadge({ score }) {
+  const c = scoreColor(score);
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      background: c.bg, border: `1px solid ${c.border}`,
+      borderRadius: 10, padding: '6px 10px', minWidth: 64,
+    }}>
+      <span style={{ fontSize: 17, fontWeight: 800, color: c.text, lineHeight: 1, fontFamily: "'Cormorant Garamond', serif" }}>{score}%</span>
+      <span style={{ fontSize: 9, color: c.text, textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>{scoreLabel(score)}</span>
     </div>
   );
 }
@@ -46,83 +82,107 @@ function ProfileCard({ profile }) {
         onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.5)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.2)'; e.currentTarget.style.boxShadow = 'none'; }}
       >
-        {/* Photo placeholder (masked) */}
+        {/* Photo area */}
         <div style={{
-          height: 200, background: 'linear-gradient(135deg, #1a1a2e, #0d1257)',
+          height: 180, background: 'linear-gradient(135deg, #1a1a2e, #0d1257)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
         }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{
-              width: 80, height: 80, borderRadius: '50%',
-              background: 'linear-gradient(135deg,rgba(200,150,45,0.3),rgba(200,150,45,0.1))',
-              border: '2px solid rgba(200,150,45,0.3)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px',
-              backdropFilter: 'blur(4px)',
-            }}>
-              <User size={36} color="rgba(200,150,45,0.5)" />
+          {profile.personalDetails?.profilePictureUrl ? (
+            <img
+              src={profile.personalDetails.profilePictureUrl}
+              alt=""
+              style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }}
+            />
+          ) : (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: '50%',
+                background: 'linear-gradient(135deg,rgba(200,150,45,0.3),rgba(200,150,45,0.1))',
+                border: '2px solid rgba(200,150,45,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px',
+              }}>
+                <User size={32} color="rgba(200,150,45,0.5)" />
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: '#9a8f7e', background: 'rgba(0,0,0,0.5)', padding: '4px 12px', borderRadius: 20 }}>
-              🔒 Photo visible to premium members
-            </div>
-          </div>
+          )}
+
+          {/* Gender badge */}
           <div style={{
-            position: 'absolute', top: 12, right: 12,
-            background: profile.gender === 'female' ? 'rgba(236,72,153,0.2)' : 'rgba(59,130,246,0.2)',
-            border: `1px solid ${profile.gender === 'female' ? 'rgba(236,72,153,0.4)' : 'rgba(59,130,246,0.4)'}`,
-            color: profile.gender === 'female' ? '#f472b6' : '#60a5fa',
-            padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+            position: 'absolute', top: 10, left: 10,
+            background: profile.gender === 'female' ? 'rgba(236,72,153,0.85)' : 'rgba(59,130,246,0.85)',
+            color: '#fff', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+            backdropFilter: 'blur(4px)',
           }}>
             {profile.gender === 'female' ? '♀ Bride' : '♂ Groom'}
           </div>
+
+          {/* Match score badge */}
+          {profile.matchScore > 0 && (
+            <div style={{ position: 'absolute', top: 10, right: 10 }}>
+              <MatchScoreBadge score={profile.matchScore} />
+            </div>
+          )}
         </div>
 
         {/* Info */}
-        <div style={{ padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+        <div style={{ padding: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
             <div>
-              <h3 style={{ color: '#f5f0e8', fontSize: 17, fontWeight: 700, marginBottom: 2, fontFamily: "'Cormorant Garamond', serif" }}>
+              <h3 style={{ color: '#f5f0e8', fontSize: 16, fontWeight: 700, marginBottom: 2, fontFamily: "'Cormorant Garamond', serif" }}>
                 {profile.firstName} {profile.lastName[0]}.
               </h3>
               <p style={{ color: '#c8962d', fontSize: 13, fontWeight: 500 }}>
                 {profile.age ? `${profile.age} yrs` : 'Age N/A'}
+                {profile.personalDetails?.height ? ` · ${profile.personalDetails.height} cm` : ''}
               </p>
             </div>
             {profile.communityDetails?.raasi && (
-              <div style={{ background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', padding: '4px 10px', borderRadius: 8 }}>
-                <div style={{ fontSize: 10, color: '#9a8f7e', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Raasi</div>
-                <div style={{ fontSize: 12, color: '#f0c050', fontWeight: 600 }}>{profile.communityDetails.raasi}</div>
+              <div style={{ background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', padding: '3px 8px', borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: '#9a8f7e', textTransform: 'uppercase' }}>Raasi</div>
+                <div style={{ fontSize: 11, color: '#f0c050', fontWeight: 600 }}>{profile.communityDetails.raasi}</div>
               </div>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {profile.familyDetails?.city && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a8f7e', fontSize: 13 }}>
-                <MapPin size={12} color="#c8962d" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a8f7e', fontSize: 12 }}>
+                <MapPin size={11} color="#c8962d" />
                 {profile.familyDetails.city}{profile.familyDetails.state ? `, ${profile.familyDetails.state}` : ''}
               </div>
             )}
             {profile.employmentDetails?.jobRole && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a8f7e', fontSize: 13 }}>
-                <Briefcase size={12} color="#c8962d" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a8f7e', fontSize: 12 }}>
+                <Briefcase size={11} color="#c8962d" />
                 {profile.employmentDetails.jobRole}
+                {profile.employmentDetails?.highestEducation ? ` · ${profile.employmentDetails.highestEducation}` : ''}
               </div>
             )}
             {profile.communityDetails?.religion && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a8f7e', fontSize: 13 }}>
-                <Star size={12} color="#c8962d" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a8f7e', fontSize: 12 }}>
+                <Star size={11} color="#c8962d" />
                 {profile.communityDetails.religion.charAt(0).toUpperCase() + profile.communityDetails.religion.slice(1)}
                 {profile.communityDetails.caste ? ` · ${profile.communityDetails.caste.toUpperCase()}` : ''}
               </div>
             )}
-            {profile.personalDetails?.maritalStatus && (
-              <div style={{ fontSize: 12, color: '#9a8f7e', textTransform: 'capitalize' }}>
-                {profile.personalDetails.maritalStatus.replace(/_/g, ' ')}
-              </div>
-            )}
           </div>
 
-          <div style={{ marginTop: 16, padding: '10px 14px', background: 'rgba(200,150,45,0.08)', borderRadius: 10, textAlign: 'center', fontSize: 13, color: '#c8962d', fontWeight: 500 }}>
+          {/* Match breakdown mini bar */}
+          {profile.matchScore > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', width: `${profile.matchScore}%`,
+                  background: profile.matchScore >= 80 ? 'linear-gradient(90deg,#22c55e,#4ade80)'
+                    : profile.matchScore >= 60 ? 'linear-gradient(90deg,#c8962d,#f0c050)'
+                    : 'linear-gradient(90deg,#f59e0b,#fbbf24)',
+                  borderRadius: 4, transition: 'width 0.5s',
+                }} />
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(200,150,45,0.08)', borderRadius: 8, textAlign: 'center', fontSize: 12, color: '#c8962d', fontWeight: 500 }}>
             View Full Profile →
           </div>
         </div>
@@ -137,6 +197,16 @@ export default function SearchPage() {
   const [pagination, setPagination] = useState({ total: 0, page: 1, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    // Auto-search on load
+    doSearch(1);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const doSearch = async (page = 1) => {
     setLoading(true);
@@ -155,16 +225,46 @@ export default function SearchPage() {
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 32, fontWeight: 700, color: '#f0c050', fontFamily: "'Cormorant Garamond', serif", marginBottom: 6 }}>
-          Find Your Match
-        </h1>
-        <p style={{ color: '#9a8f7e' }}>Search from thousands of verified profiles</p>
+      <style>{`
+        @media (max-width: 768px) {
+          .search-grid { grid-template-columns: 1fr !important; }
+          .filter-sidebar { display: none !important; }
+          .filter-sidebar.mobile-open { display: block !important; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 200; overflow-y: auto; padding: 16px; background: rgba(15,15,26,0.98); }
+          .profile-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; gap: 12px !important; }
+        }
+      `}</style>
+
+      {/* Header */}
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 700, color: '#f0c050', fontFamily: "'Cormorant Garamond', serif", marginBottom: 4 }}>
+            Find Your Match
+          </h1>
+          <p style={{ color: '#9a8f7e', fontSize: 13 }}>Profiles sorted by compatibility score</p>
+        </div>
+        {isMobile && (
+          <button
+            onClick={() => setShowMobileFilters(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(200,150,45,0.15)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '10px 16px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+          >
+            <Filter size={15} /> Filters
+          </button>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 24 }}>
-        {/* Filter Sidebar */}
-        <FilterPanel filters={filters} setFilters={setFilters} onSearch={() => doSearch(1)} />
+      {/* Mobile filter drawer */}
+      {showMobileFilters && (
+        <div className="filter-sidebar mobile-open">
+          <FilterPanel filters={filters} setFilters={setFilters} onSearch={() => doSearch(1)} onClose={() => setShowMobileFilters(false)} />
+        </div>
+      )}
+
+      <div className="search-grid" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 }}>
+
+        {/* Desktop Filter Sidebar */}
+        <div className="filter-sidebar" style={{ display: isMobile ? 'none' : 'block' }}>
+          <FilterPanel filters={filters} setFilters={setFilters} onSearch={() => doSearch(1)} />
+        </div>
 
         {/* Results */}
         <div>
@@ -177,8 +277,11 @@ export default function SearchPage() {
 
           {!loading && searched && (
             <div>
-              <div style={{ marginBottom: 20, color: '#9a8f7e', fontSize: 14 }}>
-                Found <span style={{ color: '#f0c050', fontWeight: 700 }}>{pagination.total}</span> matching profiles
+              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <span style={{ color: '#9a8f7e', fontSize: 13 }}>
+                  Found <span style={{ color: '#f0c050', fontWeight: 700 }}>{pagination.total}</span> profiles
+                </span>
+                <span style={{ fontSize: 12, color: '#9a8f7e' }}>Sorted by match score ↓</span>
               </div>
 
               {results.length === 0 ? (
@@ -189,34 +292,25 @@ export default function SearchPage() {
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
+                  <div className="profile-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 18 }}>
                     {results.map((profile) => <ProfileCard key={profile.id} profile={profile} />)}
                   </div>
 
-                  {/* Pagination */}
                   {pagination.totalPages > 1 && (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 32 }}>
-                      <button onClick={() => doSearch(pagination.page - 1)} disabled={pagination.page === 1} style={{ background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button onClick={() => doSearch(pagination.page - 1)} disabled={pagination.page === 1} style={{ background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: pagination.page === 1 ? 0.4 : 1 }}>
                         <ChevronLeft size={16} />
                       </button>
                       <span style={{ color: '#9a8f7e', fontSize: 14 }}>
                         Page {pagination.page} of {pagination.totalPages}
                       </span>
-                      <button onClick={() => doSearch(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} style={{ background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button onClick={() => doSearch(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} style={{ background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '8px 16px', borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, opacity: pagination.page === pagination.totalPages ? 0.4 : 1 }}>
                         <ChevronRight size={16} />
                       </button>
                     </div>
                   )}
                 </>
               )}
-            </div>
-          )}
-
-          {!searched && !loading && (
-            <div style={{ textAlign: 'center', padding: 80, background: 'rgba(26,26,46,0.5)', borderRadius: 20, border: '1px solid rgba(200,150,45,0.15)' }}>
-              <div style={{ fontSize: 64, marginBottom: 20 }}>🔍</div>
-              <h3 style={{ color: '#f5f0e8', fontSize: 22, marginBottom: 8, fontFamily: "'Cormorant Garamond', serif" }}>Start Your Search</h3>
-              <p style={{ color: '#9a8f7e' }}>Use the filters on the left to find your ideal match</p>
             </div>
           )}
         </div>
