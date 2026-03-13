@@ -1,14 +1,12 @@
 // src/pages/InterestsPage.jsx
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-
-const API = import.meta.env.VITE_API_URL;
+import api from '../services/api';
 
 const tabs = [
-  { key: 'received_pending', label: '📩 Received', api: '/interests/received?status=pending' },
-  { key: 'received_accepted', label: '✅ Accepted', api: '/interests/received?status=accepted' },
-  { key: 'sent', label: '💌 Sent', api: '/interests/sent?status=all' },
+  { key: 'received_pending', label: '📩 Received', path: '/interests/received?status=pending' },
+  { key: 'received_accepted', label: '✅ Accepted', path: '/interests/received?status=accepted' },
+  { key: 'sent', label: '💌 Sent', path: '/interests/sent?status=all' },
 ];
 
 function getAge(dob) {
@@ -31,11 +29,8 @@ export default function InterestsPage() {
     setLoading(true);
     setInterests([]);
     try {
-      const token = localStorage.getItem('token');
       const tab = tabs.find(t => t.key === activeTab);
-      const res = await axios.get(`${API}${tab.api}&limit=20`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get(`${tab.path}&limit=20`);
       setInterests(res.data.data || []);
     } catch (e) {
       console.error(e);
@@ -47,10 +42,7 @@ export default function InterestsPage() {
   const handleRespond = async (interestId, action) => {
     setActing(interestId);
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`${API}/interests/${interestId}/respond`, { action }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.patch(`/interests/${interestId}/respond`, { action });
       fetchInterests();
     } catch (e) {
       alert(e.response?.data?.message || 'Failed');
@@ -63,144 +55,145 @@ export default function InterestsPage() {
   const isSentTab = activeTab === 'sent';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8f4f0', padding: '24px 16px' }}>
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <h1 style={{ fontSize: 26, fontWeight: 700, color: '#f0c050', fontFamily: "'Cormorant Garamond', serif", marginBottom: 24 }}>
+        💌 My Interests
+      </h1>
 
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1a237e', marginBottom: 24 }}>
-          💌 My Interests
-        </h1>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid rgba(200,150,45,0.2)' }}>
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              fontWeight: activeTab === tab.key ? 700 : 400,
+              color: activeTab === tab.key ? '#f0c050' : '#9a8f7e',
+              borderBottom: activeTab === tab.key ? '2px solid #c8962d' : '2px solid transparent',
+              marginBottom: -1,
+              fontSize: 15,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '2px solid #e0e0e0' }}>
-          {tabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                padding: '10px 20px',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                fontWeight: activeTab === tab.key ? 700 : 400,
-                color: activeTab === tab.key ? '#1a237e' : '#666',
-                borderBottom: activeTab === tab.key ? '3px solid #1a237e' : '3px solid transparent',
-                marginBottom: -2,
-                fontSize: 15,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Content */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#9a8f7e' }}>Loading...</div>
+      ) : interests.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#9a8f7e' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>💌</div>
+          <p>No interests here yet</p>
         </div>
-
-        {/* Content */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>Loading...</div>
-        ) : interests.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>💌</div>
-            <p>No interests here yet</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {interests.map(item => {
-              const profile = getProfile(item);
-              const pd = profile?.personalDetails;
-              const fd = profile?.familyDetails;
-              const ed = profile?.employmentDetails;
-              return (
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {interests.map(item => {
+            const profile = getProfile(item);
+            const pd = profile?.personalDetails;
+            const fd = profile?.familyDetails;
+            const ed = profile?.employmentDetails;
+            return (
+              <div
+                key={item.id}
+                style={{
+                  background: 'rgba(26,26,46,0.8)',
+                  border: '1px solid rgba(200,150,45,0.2)',
+                  borderRadius: 16,
+                  padding: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                }}
+              >
+                {/* Avatar */}
                 <div
-                  key={item.id}
+                  onClick={() => navigate(`/profile/${profile?.id}`)}
                   style={{
-                    background: '#fff',
-                    borderRadius: 16,
-                    padding: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    width: 70, height: 70, borderRadius: '50%', flexShrink: 0,
+                    background: 'rgba(200,150,45,0.1)',
+                    border: '2px solid rgba(200,150,45,0.3)',
+                    overflow: 'hidden', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >
-                  {/* Avatar */}
+                  {pd?.profile_picture_url ? (
+                    <img src={pd.profile_picture_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: 28 }}>{profile?.gender === 'female' ? '👩' : '👨'}</span>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div
+                    style={{ fontWeight: 700, fontSize: 17, color: '#f0c050', cursor: 'pointer', fontFamily: "'Cormorant Garamond', serif" }}
                     onClick={() => navigate(`/profile/${profile?.id}`)}
-                    style={{
-                      width: 70, height: 70, borderRadius: '50%', flexShrink: 0,
-                      background: '#e8eaf6', overflow: 'hidden', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
                   >
-                    {pd?.profile_picture_url ? (
-                      <img src={pd.profile_picture_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <span style={{ fontSize: 28 }}>{profile?.gender === 'female' ? '👩' : '👨'}</span>
-                    )}
+                    {profile?.first_name} {profile?.last_name}
                   </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{ fontWeight: 700, fontSize: 17, color: '#1a237e', cursor: 'pointer' }}
-                      onClick={() => navigate(`/profile/${profile?.id}`)}
-                    >
-                      {profile?.first_name} {profile?.last_name}
-                    </div>
-                    <div style={{ color: '#666', fontSize: 13, marginTop: 3 }}>
-                      {getAge(profile?.date_of_birth)}
-                      {fd?.city && ` • ${fd.city}`}
-                      {ed?.job_role && ` • ${ed.job_role}`}
-                    </div>
-                    {item.message && (
-                      <div style={{ marginTop: 6, fontSize: 13, color: '#555', fontStyle: 'italic', background: '#f5f5f5', padding: '6px 10px', borderRadius: 8 }}>
-                        "{item.message}"
-                      </div>
-                    )}
-                    <div style={{ marginTop: 4, fontSize: 12, color: '#aaa' }}>
-                      {new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </div>
+                  <div style={{ color: '#9a8f7e', fontSize: 13, marginTop: 3, fontFamily: 'Inter, sans-serif' }}>
+                    {getAge(profile?.date_of_birth)}
+                    {fd?.city && ` • ${fd.city}`}
+                    {ed?.job_role && ` • ${ed.job_role}`}
                   </div>
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
-                    {activeTab === 'received_pending' && (
-                      <>
-                        <button
-                          onClick={() => handleRespond(item.id, 'accepted')}
-                          disabled={acting === item.id}
-                          style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#4caf50', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}
-                        >
-                          {acting === item.id ? '...' : '✓ Accept'}
-                        </button>
-                        <button
-                          onClick={() => handleRespond(item.id, 'rejected')}
-                          disabled={acting === item.id}
-                          style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#f44336', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}
-                        >
-                          ✗ Decline
-                        </button>
-                      </>
-                    )}
-                    {activeTab === 'received_accepted' && (
-                      <span style={{ padding: '8px 18px', borderRadius: 8, background: '#e8f5e9', color: '#2e7d32', fontWeight: 600, fontSize: 14 }}>
-                        ✅ Accepted
-                      </span>
-                    )}
-                    {isSentTab && (
-                      <span style={{
-                        padding: '8px 18px', borderRadius: 8, fontWeight: 600, fontSize: 14,
-                        background: item.status === 'accepted' ? '#e8f5e9' : item.status === 'rejected' ? '#ffebee' : '#fff8e1',
-                        color: item.status === 'accepted' ? '#2e7d32' : item.status === 'rejected' ? '#c62828' : '#f57f17',
-                      }}>
-                        {item.status === 'accepted' ? '✅ Accepted' : item.status === 'rejected' ? '✗ Declined' : '⏳ Pending'}
-                      </span>
-                    )}
+                  {item.message && (
+                    <div style={{ marginTop: 6, fontSize: 13, color: '#9a8f7e', fontStyle: 'italic', background: 'rgba(200,150,45,0.05)', padding: '6px 10px', borderRadius: 8, border: '1px solid rgba(200,150,45,0.1)' }}>
+                      "{item.message}"
+                    </div>
+                  )}
+                  <div style={{ marginTop: 4, fontSize: 12, color: '#666', fontFamily: 'Inter, sans-serif' }}>
+                    {new Date(item.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+                  {activeTab === 'received_pending' && (
+                    <>
+                      <button
+                        onClick={() => handleRespond(item.id, 'accepted')}
+                        disabled={acting === item.id}
+                        style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: 'rgba(76,175,80,0.2)', color: '#4caf50', fontWeight: 600, cursor: 'pointer', fontSize: 14, fontFamily: 'Inter, sans-serif', border: '1px solid rgba(76,175,80,0.3)' }}
+                      >
+                        {acting === item.id ? '...' : '✓ Accept'}
+                      </button>
+                      <button
+                        onClick={() => handleRespond(item.id, 'rejected')}
+                        disabled={acting === item.id}
+                        style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid rgba(244,67,54,0.3)', background: 'rgba(244,67,54,0.1)', color: '#f44336', fontWeight: 600, cursor: 'pointer', fontSize: 14, fontFamily: 'Inter, sans-serif' }}
+                      >
+                        ✗ Decline
+                      </button>
+                    </>
+                  )}
+                  {activeTab === 'received_accepted' && (
+                    <span style={{ padding: '8px 18px', borderRadius: 8, background: 'rgba(76,175,80,0.1)', color: '#4caf50', fontWeight: 600, fontSize: 14, border: '1px solid rgba(76,175,80,0.2)' }}>
+                      ✅ Accepted
+                    </span>
+                  )}
+                  {isSentTab && (
+                    <span style={{
+                      padding: '8px 18px', borderRadius: 8, fontWeight: 600, fontSize: 14, fontFamily: 'Inter, sans-serif',
+                      background: item.status === 'accepted' ? 'rgba(76,175,80,0.1)' : item.status === 'rejected' ? 'rgba(244,67,54,0.1)' : 'rgba(245,127,23,0.1)',
+                      color: item.status === 'accepted' ? '#4caf50' : item.status === 'rejected' ? '#f44336' : '#f57f17',
+                      border: item.status === 'accepted' ? '1px solid rgba(76,175,80,0.2)' : item.status === 'rejected' ? '1px solid rgba(244,67,54,0.2)' : '1px solid rgba(245,127,23,0.2)',
+                    }}>
+                      {item.status === 'accepted' ? '✅ Accepted' : item.status === 'rejected' ? '✗ Declined' : '⏳ Pending'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,6 @@
 // src/components/InterestButton.jsx
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API = import.meta.env.VITE_API_URL;
+import api from '../services/api';
 
 export default function InterestButton({ profileId, className = '' }) {
   const [status, setStatus] = useState(null); // null | 'pending' | 'accepted' | 'rejected'
@@ -16,14 +14,14 @@ export default function InterestButton({ profileId, className = '' }) {
 
   const fetchStatus = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API}/interests/status/${profileId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get(`/interests/status/${profileId}`);
       const { sent } = res.data.data;
       if (sent) {
         setStatus(sent.status);
         setInterestId(sent.id);
+      } else {
+        setStatus(null);
+        setInterestId(null);
       }
     } catch (e) {
       // not logged in or error
@@ -35,10 +33,7 @@ export default function InterestButton({ profileId, className = '' }) {
   const handleSend = async () => {
     setActing(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/interests/send/${profileId}`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.post(`/interests/send/${profileId}`, {});
       setStatus('pending');
       setInterestId(res.data.data.id);
     } catch (e) {
@@ -52,10 +47,7 @@ export default function InterestButton({ profileId, className = '' }) {
     if (!window.confirm('Withdraw this interest?')) return;
     setActing(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`${API}/interests/${interestId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/interests/${interestId}`);
       setStatus(null);
       setInterestId(null);
     } catch (e) {
@@ -65,35 +57,31 @@ export default function InterestButton({ profileId, className = '' }) {
     }
   };
 
-  if (loading) return <button className={`btn-interest disabled ${className}`} disabled>...</button>;
+  if (loading) return (
+    <button className={`btn-interest disabled ${className}`} disabled>...</button>
+  );
 
-  if (status === 'accepted') {
-    return (
-      <button className={`btn-interest accepted ${className}`} disabled>
-        ✅ Interest Accepted
-      </button>
-    );
-  }
+  if (status === 'accepted') return (
+    <button className={`btn-interest accepted ${className}`} disabled>
+      ✅ Interest Accepted
+    </button>
+  );
 
-  if (status === 'rejected') {
-    return (
-      <button className={`btn-interest rejected ${className}`} disabled>
-        ✗ Interest Declined
-      </button>
-    );
-  }
+  if (status === 'rejected') return (
+    <button className={`btn-interest rejected ${className}`} disabled>
+      ✗ Interest Declined
+    </button>
+  );
 
-  if (status === 'pending') {
-    return (
-      <button
-        className={`btn-interest pending ${className}`}
-        onClick={handleWithdraw}
-        disabled={acting}
-      >
-        {acting ? '...' : '⏳ Withdraw Interest'}
-      </button>
-    );
-  }
+  if (status === 'pending') return (
+    <button
+      className={`btn-interest pending ${className}`}
+      onClick={handleWithdraw}
+      disabled={acting}
+    >
+      {acting ? '...' : '⏳ Withdraw Interest'}
+    </button>
+  );
 
   return (
     <button
