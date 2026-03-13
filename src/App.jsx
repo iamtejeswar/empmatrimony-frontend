@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import store from './store';
 import { useSelector } from 'react-redux';
 import GoogleSuccessPage from './pages/GoogleSuccessPage';
+import WhoViewedMePage from './pages/WhoViewedMePage';
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -52,6 +53,7 @@ function AppRoutes() {
         <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
+          <Route path="/who-viewed-me" element={<WhoViewedMePage />} />
       </Routes>
     </BrowserRouter>
   );
