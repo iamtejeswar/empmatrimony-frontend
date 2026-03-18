@@ -33,39 +33,26 @@ export default function usePushNotifications(isAuthenticated) {
 
     const setup = async () => {
       try {
-        // Register service worker
         const registration = await navigator.serviceWorker.register('/firebase-sw.js');
-
-        // Request permission
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') return;
 
         const msg = getFirebaseMessaging();
-
-        // Get FCM token
         const token = await getToken(msg, {
           vapidKey: VAPID_KEY,
           serviceWorkerRegistration: registration,
         });
 
         if (token) {
-          // Save token to backend
           await api.post('/notifications/token', { token, platform: 'web' });
           console.log('✅ FCM token registered');
         }
 
-        // Handle foreground messages
+        // Handle foreground messages — plain toast, no JSX
         onMessage(msg, (payload) => {
-          const { title, body } = payload.notification || {};
-          if (title) {
-            toast(
-              <div>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>{title}</div>
-                <div style={{ fontSize: 13 }}>{body}</div>
-              </div>,
-              { duration: 5000, icon: '🔔' }
-            );
-          }
+          const title = payload.notification?.title || 'New notification';
+          const body = payload.notification?.body || '';
+          toast(`🔔 ${title}${body ? ` — ${body}` : ''}`, { duration: 5000 });
         });
       } catch (err) {
         console.error('FCM setup error:', err);
