@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { profileAPI } from '../services/api';
 import api from '../services/api';
-import { ArrowLeft, User, MapPin, Briefcase, Star, Loader2, MoreVertical, Ban, Flag, X, MessageCircle } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Briefcase, Star, Loader2, MoreVertical, Ban, Flag, X, MessageCircle, Lock, Crown } from 'lucide-react';
 import InterestButton from '../components/InterestButton';
 import toast from 'react-hot-toast';
 
@@ -18,11 +18,12 @@ const REPORT_REASONS = [
   { value: 'other', label: 'Other' },
 ];
 
+const PREMIUM_PLANS = ['basic', 'premium', 'gold'];
+
 function ReportModal({ userId, onClose }) {
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
-
   const submit = async () => {
     if (!reason) return toast.error('Please select a reason');
     setLoading(true);
@@ -30,13 +31,9 @@ function ReportModal({ userId, onClose }) {
       await api.post(`/blocks/${userId}/report`, { reason, description });
       toast.success('Report submitted. Our team will review it.');
       onClose();
-    } catch {
-      toast.error('Failed to submit report');
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error('Failed to submit report'); }
+    finally { setLoading(false); }
   };
-
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div style={{ background: '#1a1a2e', border: '1px solid rgba(200,150,45,0.3)', borderRadius: 20, padding: 32, width: '100%', maxWidth: 440 }}>
@@ -71,6 +68,27 @@ function ReportModal({ userId, onClose }) {
   );
 }
 
+// Premium gate overlay shown over blurred sections
+function PremiumGate() {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 10,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(15,15,26,0.85)', backdropFilter: 'blur(2px)',
+      borderRadius: 16,
+    }}>
+      <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg,rgba(200,150,45,0.3),rgba(200,150,45,0.1))', border: '2px solid rgba(200,150,45,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+        <Lock size={24} color="#c8962d" />
+      </div>
+      <p style={{ color: '#f5f0e8', fontSize: 15, fontWeight: 700, marginBottom: 6, fontFamily: "'Cormorant Garamond', serif" }}>Premium Members Only</p>
+      <p style={{ color: '#9a8f7e', fontSize: 12, marginBottom: 18, textAlign: 'center', maxWidth: 220 }}>Upgrade your plan to view full profile details</p>
+      <button style={{ background: 'linear-gradient(135deg,#c8962d,#f0c050)', border: 'none', color: '#1a1a00', padding: '10px 24px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Crown size={15} /> Upgrade Now
+      </button>
+    </div>
+  );
+}
+
 export default function ProfileViewPage() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -83,12 +101,18 @@ export default function ProfileViewPage() {
   const [startingChat, setStartingChat] = useState(false);
   const menuRef = useRef(null);
 
+  // Check if current user can view full profile
+  const isPremium = currentUser?.role === 'admin' ||
+    currentUser?.role === 'moderator' ||
+    PREMIUM_PLANS.includes(currentUser?.subscriptionPlan);
+  const isOwnProfile = currentUser?.id === userId;
+  const canViewFull = isOwnProfile || isPremium;
+
   useEffect(() => {
     profileAPI.getPublicProfile(userId)
       .then(({ data }) => setProfile(data.data.profile))
       .catch(console.error)
       .finally(() => setLoading(false));
-
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -104,7 +128,7 @@ export default function ProfileViewPage() {
       } else {
         await api.post(`/blocks/${userId}`);
         setIsBlocked(true);
-        toast.success('User blocked. They will no longer appear in search.');
+        toast.success('User blocked.');
       }
     } catch { toast.error('Action failed'); }
   };
@@ -116,11 +140,8 @@ export default function ProfileViewPage() {
     try {
       const { data } = await api.post(`/chat/conversations/${userId}/start`);
       navigate(`/chat/${data.data.conversationId}`);
-    } catch {
-      toast.error('Could not start conversation');
-    } finally {
-      setStartingChat(false);
-    }
+    } catch { toast.error('Could not start conversation'); }
+    finally { setStartingChat(false); }
   };
 
   if (loading) return (
@@ -131,13 +152,17 @@ export default function ProfileViewPage() {
   );
   if (!profile) return <div style={{ textAlign: 'center', padding: 80, color: '#9a8f7e' }}>Profile not found</div>;
 
-  const Section = ({ title, icon: Icon, children }) => (
-    <div style={{ background: 'rgba(26,26,46,0.8)', border: '1px solid rgba(200,150,45,0.2)', borderRadius: 16, padding: 28, marginBottom: 20 }}>
+  const Section = ({ title, icon: Icon, children, locked }) => (
+    <div style={{ background: 'rgba(26,26,46,0.8)', border: '1px solid rgba(200,150,45,0.2)', borderRadius: 16, padding: 28, marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid rgba(200,150,45,0.15)' }}>
         <Icon size={18} color="#c8962d" />
         <h3 style={{ color: '#f0c050', fontSize: 17, fontWeight: 700, fontFamily: "'Cormorant Garamond', serif" }}>{title}</h3>
+        {locked && <span style={{ marginLeft: 'auto', background: 'rgba(200,150,45,0.15)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '2px 10px', borderRadius: 20, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}><Lock size={10} /> Premium</span>}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>{children}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, filter: locked ? 'blur(6px)' : 'none', userSelect: locked ? 'none' : 'auto' }}>
+        {children}
+      </div>
+      {locked && <PremiumGate />}
     </div>
   );
 
@@ -149,20 +174,12 @@ export default function ProfileViewPage() {
   ) : null;
 
   const age = profile.dateOfBirth ? Math.floor((new Date() - new Date(profile.dateOfBirth)) / (365.25 * 24 * 3600 * 1000)) : null;
-  const isOwnProfile = currentUser?.id === userId;
 
-  // Inline button style — bypasses btn-interest class width issues
-  const btnBase = {
-    display: 'inline-flex', alignItems: 'center', gap: 8,
-    padding: '10px 20px', borderRadius: 10, border: 'none',
-    cursor: 'pointer', fontWeight: 600, fontSize: 14,
-    fontFamily: 'Inter, sans-serif', transition: 'all 0.2s',
-    whiteSpace: 'nowrap',
-  };
+  const btnBase = { display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14, fontFamily: 'Inter, sans-serif', transition: 'all 0.2s', whiteSpace: 'nowrap' };
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600&display=swap');`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {showReport && <ReportModal userId={userId} onClose={() => setShowReport(false)} />}
 
@@ -170,14 +187,12 @@ export default function ProfileViewPage() {
         <ArrowLeft size={16} /> Back to Search
       </Link>
 
-      {/* Profile Header */}
+      {/* Profile Header — always visible */}
       <div style={{ background: 'linear-gradient(135deg,rgba(26,35,126,0.8),rgba(200,150,45,0.2))', border: '1px solid rgba(200,150,45,0.3)', borderRadius: 24, padding: 40, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 32, position: 'relative', flexWrap: 'wrap' }}>
 
-        {/* 3-dot menu */}
         {!isOwnProfile && (
           <div ref={menuRef} style={{ position: 'absolute', top: 16, right: 16 }}>
-            <button onClick={() => setMenuOpen(o => !o)}
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: '#9a8f7e', display: 'flex', alignItems: 'center' }}>
+            <button onClick={() => setMenuOpen(o => !o)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: '#9a8f7e', display: 'flex', alignItems: 'center' }}>
               <MoreVertical size={18} />
             </button>
             {menuOpen && (
@@ -204,30 +219,41 @@ export default function ProfileViewPage() {
           <h1 style={{ fontSize: 34, fontWeight: 700, color: '#f5f0e8', fontFamily: "'Cormorant Garamond', serif", marginBottom: 4 }}>
             {profile.firstName} {profile.lastName?.[0]}.
           </h1>
-          {age && <p style={{ color: '#c8962d', fontSize: 16, marginBottom: 8 }}>{age} years old</p>}
-          <div style={{ display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap' }}>
-            {profile.familyDetails?.city && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><MapPin size={13} color="#c8962d" />{profile.familyDetails.city}</span>}
-            {profile.employmentDetails?.jobRole && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><Briefcase size={13} color="#c8962d" />{profile.employmentDetails.jobRole}</span>}
+          {age && <p style={{ color: '#c8962d', fontSize: 16, marginBottom: 4 }}>{age} years old</p>}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 8, flexWrap: 'wrap' }}>
+            {profile.familyDetails?.city && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}>
+                <MapPin size={13} color="#c8962d" />{profile.familyDetails.city}{profile.familyDetails.state ? `, ${profile.familyDetails.state}` : ''}
+              </span>
+            )}
+            {profile.employmentDetails?.jobRole && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}>
+                <Briefcase size={13} color="#c8962d" />{profile.employmentDetails.jobRole}
+              </span>
+            )}
+            {profile.communityDetails?.religion && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}>
+                <Star size={13} color="#c8962d" />
+                {profile.communityDetails.religion.charAt(0).toUpperCase() + profile.communityDetails.religion.slice(1)}
+                {profile.communityDetails.caste ? ` · ${profile.communityDetails.caste.toUpperCase()}` : ''}
+              </span>
+            )}
           </div>
 
-          {/* Action buttons — both inline-flex, no class width interference */}
+          {/* Premium badge if not premium */}
+          {!canViewFull && !isOwnProfile && (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(200,150,45,0.1)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', padding: '4px 12px', borderRadius: 20, fontSize: 12, marginBottom: 12 }}>
+              <Crown size={12} /> Upgrade to view full profile
+            </div>
+          )}
+
           {!isOwnProfile && (
             <div style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <InterestButton profileId={userId} />
-              <button
-                onClick={handleMessage}
-                disabled={startingChat}
-                style={{
-                  ...btnBase,
-                  background: 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(200,150,45,0.3)',
-                  color: '#c8962d',
-                  opacity: startingChat ? 0.7 : 1,
-                  cursor: startingChat ? 'default' : 'pointer',
-                }}
-                onMouseEnter={e => { if (!startingChat) { e.currentTarget.style.background = 'rgba(200,150,45,0.15)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.5)'; }}}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.3)'; }}
-              >
+              <button onClick={handleMessage} disabled={startingChat}
+                style={{ ...btnBase, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,150,45,0.3)', color: '#c8962d', opacity: startingChat ? 0.7 : 1, cursor: startingChat ? 'default' : 'pointer' }}
+                onMouseEnter={e => { if (!startingChat) { e.currentTarget.style.background = 'rgba(200,150,45,0.15)'; }}}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}>
                 {startingChat ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <MessageCircle size={15} />}
                 {startingChat ? 'Opening...' : 'Message'}
               </button>
@@ -236,18 +262,24 @@ export default function ProfileViewPage() {
         </div>
       </div>
 
+      {/* Sections — locked for free users */}
       {profile.personalDetails && (
-        <Section title="Personal Details" icon={User}>
+        <Section title="Personal Details" icon={User} locked={!canViewFull}>
           <Field label="Marital Status" value={profile.personalDetails.maritalStatus} />
           <Field label="Mother Tongue" value={profile.personalDetails.motherTongue} />
           {profile.personalDetails.height && <Field label="Height" value={`${profile.personalDetails.height} cm`} />}
           {profile.personalDetails.weight && <Field label="Weight" value={`${profile.personalDetails.weight} kg`} />}
-          {profile.personalDetails.aboutMe && <div style={{ gridColumn: '1/-1' }}><div style={{ fontSize: 11, color: '#9a8f7e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>About</div><p style={{ color: '#f5f0e8', fontSize: 14, lineHeight: 1.6 }}>{profile.personalDetails.aboutMe}</p></div>}
+          {profile.personalDetails.aboutMe && (
+            <div style={{ gridColumn: '1/-1' }}>
+              <div style={{ fontSize: 11, color: '#9a8f7e', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>About</div>
+              <p style={{ color: '#f5f0e8', fontSize: 14, lineHeight: 1.6 }}>{profile.personalDetails.aboutMe}</p>
+            </div>
+          )}
         </Section>
       )}
 
       {profile.communityDetails && (
-        <Section title="Community & Horoscope" icon={Star}>
+        <Section title="Community & Horoscope" icon={Star} locked={!canViewFull}>
           <Field label="Religion" value={profile.communityDetails.religion} />
           <Field label="Caste" value={profile.communityDetails.caste?.toUpperCase()} />
           <Field label="Sub Caste" value={profile.communityDetails.subCaste} />
@@ -257,7 +289,7 @@ export default function ProfileViewPage() {
       )}
 
       {profile.employmentDetails && (
-        <Section title="Education & Career" icon={Briefcase}>
+        <Section title="Education & Career" icon={Briefcase} locked={!canViewFull}>
           <Field label="Education" value={profile.employmentDetails.highestEducation} />
           <Field label="Employment" value={profile.employmentDetails.employmentType} />
           <Field label="Job Role" value={profile.employmentDetails.jobRole} />
