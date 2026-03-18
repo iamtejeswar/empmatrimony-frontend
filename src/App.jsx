@@ -17,7 +17,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 import InterestsPage from './pages/InterestsPage';
 import MainLayout from './components/layout/MainLayout';
-import usePushNotifications from '../hooks/usePushNotifications';
+import usePushNotifications from './hooks/usePushNotifications';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isAuthenticated, user } = useSelector((s) => s.auth);
@@ -25,9 +25,6 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   if (adminOnly && user?.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return children;
 };
-// inside component:
-const { isAuthenticated } = useSelector(s => s.auth);
-usePushNotifications(isAuthenticated);
 
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, user } = useSelector((s) => s.auth);
@@ -38,16 +35,17 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppRoutes() {
+  const { isAuthenticated } = useSelector((s) => s.auth);
+  usePushNotifications(isAuthenticated); // ← inside component, correct
+
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
         <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
         <Route path="/auth/google/success" element={<GoogleSuccessPage />} />
 
-        {/* Protected Routes — all inside MainLayout */}
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
           <Route path="/profile/complete" element={<ProtectedRoute><ProfileCompletePage /></ProtectedRoute>} />
@@ -59,10 +57,7 @@ function AppRoutes() {
           <Route path="/chat/:conversationId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
         </Route>
 
-        {/* Admin Routes */}
         <Route path="/admin/*" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-
-        {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
