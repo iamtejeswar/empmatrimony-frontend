@@ -17,6 +17,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import NotFoundPage from './pages/NotFoundPage';
 import InterestsPage from './pages/InterestsPage';
 import MainLayout from './components/layout/MainLayout';
+import usePushNotifications from '../hooks/usePushNotifications';
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const { isAuthenticated, user } = useSelector((s) => s.auth);
@@ -24,6 +25,9 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
   if (adminOnly && user?.role !== 'admin') return <Navigate to="/dashboard" replace />;
   return children;
 };
+// inside component:
+const { isAuthenticated } = useSelector(s => s.auth);
+usePushNotifications(isAuthenticated);
 
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, user } = useSelector((s) => s.auth);
