@@ -6,6 +6,7 @@ import store from './store';
 import { useSelector } from 'react-redux';
 import GoogleSuccessPage from './pages/GoogleSuccessPage';
 import WhoViewedMePage from './pages/WhoViewedMePage';
+import ChatPage from './pages/ChatPage';
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -54,6 +55,8 @@ function AppRoutes() {
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
           <Route path="/who-viewed-me" element={<WhoViewedMePage />} />
+<Route path="/chat" element={<ChatPage />} />
+<Route path="/chat/:conversationId" element={<ChatPage />} />
       </Routes>
     </BrowserRouter>
   );

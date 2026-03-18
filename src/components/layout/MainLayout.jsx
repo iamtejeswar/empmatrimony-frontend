@@ -2,9 +2,10 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/authSlice';
-import { Heart, Search, Home, User, Shield, LogOut, Menu, X, Bell, Eye } from 'lucide-react';
-import { useState } from 'react';
+import { Heart, Search, Home, Shield, LogOut, Menu, X, Bell, Eye, MessageCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import api from '../../services/api';
 
 export default function MainLayout() {
   const dispatch = useDispatch();
@@ -12,6 +13,19 @@ export default function MainLayout() {
   const location = useLocation();
   const { user } = useSelector((s) => s.auth);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const { data } = await api.get('/chat/unread-count');
+        setUnreadCount(data.data.unreadCount);
+      } catch {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30000); // poll every 30s
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await dispatch(logout());
@@ -23,6 +37,7 @@ export default function MainLayout() {
     { to: '/dashboard', icon: Home, label: 'Home' },
     { to: '/search', icon: Search, label: 'Find Match' },
     { to: '/interests', icon: Heart, label: 'Interests' },
+    { to: '/chat', icon: MessageCircle, label: 'Messages', badge: unreadCount },
     { to: '/who-viewed-me', icon: Eye, label: 'Who Viewed Me' },
     ...(user?.role === 'admin' ? [{ to: '/admin', icon: Shield, label: 'Admin' }] : []),
   ];
@@ -34,21 +49,14 @@ export default function MainLayout() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
         :root {
-          --gold: #c8962d;
-          --gold-light: #f0c050;
-          --navy: #1a237e;
-          --navy-dark: #0d1257;
-          --bg: #0f0f1a;
-          --surface: #1a1a2e;
-          --surface2: #16213e;
-          --text: #f5f0e8;
-          --text-muted: #9a8f7e;
-          --border: rgba(200,150,45,0.2);
+          --gold: #c8962d; --gold-light: #f0c050; --navy: #1a237e; --navy-dark: #0d1257;
+          --bg: #0f0f1a; --surface: #1a1a2e; --surface2: #16213e;
+          --text: #f5f0e8; --text-muted: #9a8f7e; --border: rgba(200,150,45,0.2);
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: var(--bg); color: var(--text); }
         a { text-decoration: none; color: inherit; }
-        .nav-link { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; transition: all 0.2s; color: var(--text-muted); font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; }
+        .nav-link { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; transition: all 0.2s; color: var(--text-muted); font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; position: relative; }
         .nav-link:hover { background: rgba(200,150,45,0.1); color: var(--gold); }
         .nav-link.active { background: rgba(200,150,45,0.15); color: var(--gold); }
         .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #1a1a00; border: none; padding: 10px 24px; border-radius: 10px; cursor: pointer; font-weight: 600; font-family: Inter, sans-serif; font-size: 14px; transition: all 0.2s; }
@@ -61,8 +69,7 @@ export default function MainLayout() {
         .btn-interest.accepted { background: rgba(76,175,80,0.15); color: #4caf50; border: 1px solid rgba(76,175,80,0.3); }
         .btn-interest.rejected { background: rgba(244,67,54,0.15); color: #f44336; border: 1px solid rgba(244,67,54,0.3); }
         .btn-interest.disabled { background: rgba(255,255,255,0.05); color: #666; }
-
-        /* Mobile nav drawer */
+        .nav-badge { position: absolute; top: 6px; right: 8px; background: #ef4444; color: #fff; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: Inter, sans-serif; }
         .mobile-drawer { display: none; }
         @media (max-width: 900px) {
           .desktop-nav { display: none !important; }
@@ -73,21 +80,11 @@ export default function MainLayout() {
       `}</style>
 
       {/* Navbar */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(15,15,26,0.95)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(200,150,45,0.2)',
-        padding: '0 24px',
-      }}>
+      <nav style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(15,15,26,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(200,150,45,0.2)', padding: '0 24px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
           {/* Logo */}
           <Link to="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #c8962d, #f0c050)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #c8962d, #f0c050)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Heart size={20} color="#1a1a00" fill="#1a1a00" />
             </div>
             <div>
@@ -98,10 +95,11 @@ export default function MainLayout() {
 
           {/* Desktop Nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="desktop-nav">
-            {navLinks.map(({ to, icon: Icon, label }) => (
+            {navLinks.map(({ to, icon: Icon, label, badge }) => (
               <Link key={to} to={to} className={`nav-link ${isActive(to) ? 'active' : ''}`}>
                 <Icon size={16} />
                 {label}
+                {badge > 0 && <span className="nav-badge">{badge > 9 ? '9+' : badge}</span>}
               </Link>
             ))}
           </div>
@@ -111,32 +109,14 @@ export default function MainLayout() {
             <button style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#9a8f7e', padding: 8 }}>
               <Bell size={20} />
             </button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #1a237e, #c8962d)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0,
-              }}>
-                {user?.firstName?.[0]?.toUpperCase()}
-              </div>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #1a237e, #c8962d)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+              {user?.firstName?.[0]?.toUpperCase()}
             </div>
-            <button onClick={handleLogout} style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-              color: '#ef4444', padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
-              fontSize: 13, fontFamily: 'Inter, sans-serif', fontWeight: 500, transition: 'all 0.2s',
-            }}>
+            <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '8px 14px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
               <LogOut size={15} />
               <span className="sign-out-text">Sign Out</span>
             </button>
-
-            {/* Mobile hamburger */}
-            <button
-              className="mobile-menu-btn"
-              onClick={() => setMobileOpen(o => !o)}
-              style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9a8f7e', padding: 8 }}
-            >
+            <button className="mobile-menu-btn" onClick={() => setMobileOpen(o => !o)} style={{ display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', color: '#9a8f7e', padding: 8 }}>
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
@@ -145,25 +125,15 @@ export default function MainLayout() {
 
       {/* Mobile drawer */}
       <div className={`mobile-drawer ${mobileOpen ? 'open' : ''}`}>
-        {navLinks.map(({ to, icon: Icon, label }) => (
-          <Link
-            key={to}
-            to={to}
-            className={`nav-link ${isActive(to) ? 'active' : ''}`}
-            style={{ fontSize: 16, padding: '14px 16px' }}
-            onClick={() => setMobileOpen(false)}
-          >
+        {navLinks.map(({ to, icon: Icon, label, badge }) => (
+          <Link key={to} to={to} className={`nav-link ${isActive(to) ? 'active' : ''}`} style={{ fontSize: 16, padding: '14px 16px' }} onClick={() => setMobileOpen(false)}>
             <Icon size={18} />
             {label}
+            {badge > 0 && <span className="nav-badge">{badge > 9 ? '9+' : badge}</span>}
           </Link>
         ))}
         <div style={{ marginTop: 'auto', paddingTop: 24, borderTop: '1px solid rgba(200,150,45,0.15)' }}>
-          <button onClick={handleLogout} style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-            color: '#ef4444', padding: '12px', borderRadius: 10, cursor: 'pointer',
-            fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: 500,
-          }}>
+          <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', padding: '12px', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontFamily: 'Inter, sans-serif', fontWeight: 500 }}>
             <LogOut size={16} /> Sign Out
           </button>
         </div>
