@@ -1,10 +1,10 @@
 // src/pages/ProfileViewPage.jsx
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { profileAPI } from '../services/api';
 import api from '../services/api';
-import { ArrowLeft, User, MapPin, Briefcase, Star, Loader2, MoreVertical, Ban, Flag, X } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Briefcase, Star, Loader2, MoreVertical, Ban, Flag, X, MessageCircle } from 'lucide-react';
 import InterestButton from '../components/InterestButton';
 import toast from 'react-hot-toast';
 
@@ -44,7 +44,6 @@ function ReportModal({ userId, onClose }) {
           <h3 style={{ color: '#f0c050', fontSize: 20, fontWeight: 700, fontFamily: "'Cormorant Garamond', serif" }}>Report Profile</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#9a8f7e', cursor: 'pointer' }}><X size={20} /></button>
         </div>
-
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#c8962d', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -56,18 +55,11 @@ function ReportModal({ userId, onClose }) {
             ))}
           </div>
         </div>
-
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#c8962d', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Additional Details (optional)</label>
-          <textarea
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Describe the issue..."
-            rows={3}
-            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,150,45,0.25)', borderRadius: 10, padding: '10px 12px', color: '#f5f0e8', fontSize: 13, fontFamily: 'Inter, sans-serif', outline: 'none', resize: 'vertical' }}
-          />
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the issue..." rows={3}
+            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(200,150,45,0.25)', borderRadius: 10, padding: '10px 12px', color: '#f5f0e8', fontSize: 13, fontFamily: 'Inter, sans-serif', outline: 'none', resize: 'vertical' }} />
         </div>
-
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: '#9a8f7e', padding: '11px', borderRadius: 10, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
           <button onClick={submit} disabled={loading} style={{ flex: 1, background: 'linear-gradient(135deg,#ef4444,#dc2626)', border: 'none', color: '#fff', padding: '11px', borderRadius: 10, cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>
@@ -81,12 +73,14 @@ function ReportModal({ userId, onClose }) {
 
 export default function ProfileViewPage() {
   const { userId } = useParams();
+  const navigate = useNavigate();
   const { user: currentUser } = useSelector((s) => s.auth);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [startingChat, setStartingChat] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -95,7 +89,6 @@ export default function ProfileViewPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    // Close menu on outside click
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -113,12 +106,22 @@ export default function ProfileViewPage() {
         setIsBlocked(true);
         toast.success('User blocked. They will no longer appear in search.');
       }
-    } catch {
-      toast.error('Action failed');
-    }
+    } catch { toast.error('Action failed'); }
   };
 
   const handleReport = () => { setMenuOpen(false); setShowReport(true); };
+
+  const handleMessage = async () => {
+    setStartingChat(true);
+    try {
+      const { data } = await api.post(`/chat/conversations/${userId}/start`);
+      navigate(`/chat/${data.data.conversationId}`);
+    } catch {
+      toast.error('Could not start conversation');
+    } finally {
+      setStartingChat(false);
+    }
+  };
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 80 }}>
@@ -161,27 +164,19 @@ export default function ProfileViewPage() {
       {/* Profile Header */}
       <div style={{ background: 'linear-gradient(135deg,rgba(26,35,126,0.8),rgba(200,150,45,0.2))', border: '1px solid rgba(200,150,45,0.3)', borderRadius: 24, padding: 40, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 32, position: 'relative', flexWrap: 'wrap' }}>
 
-        {/* 3-dot menu — only for other profiles */}
+        {/* 3-dot menu */}
         {!isOwnProfile && (
           <div ref={menuRef} style={{ position: 'absolute', top: 16, right: 16 }}>
-            <button
-              onClick={() => setMenuOpen(o => !o)}
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: '#9a8f7e', display: 'flex', alignItems: 'center' }}
-            >
+            <button onClick={() => setMenuOpen(o => !o)}
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', color: '#9a8f7e', display: 'flex', alignItems: 'center' }}>
               <MoreVertical size={18} />
             </button>
             {menuOpen && (
               <div style={{ position: 'absolute', top: 40, right: 0, background: '#1a1a2e', border: '1px solid rgba(200,150,45,0.3)', borderRadius: 12, padding: 8, minWidth: 170, zIndex: 50, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-                <button
-                  onClick={handleBlock}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'none', border: 'none', color: isBlocked ? '#22c55e' : '#f59e0b', cursor: 'pointer', borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif' }}
-                >
+                <button onClick={handleBlock} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'none', border: 'none', color: isBlocked ? '#22c55e' : '#f59e0b', cursor: 'pointer', borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
                   <Ban size={15} /> {isBlocked ? 'Unblock User' : 'Block User'}
                 </button>
-                <button
-                  onClick={handleReport}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif' }}
-                >
+                <button onClick={handleReport} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', borderRadius: 8, fontSize: 14, fontFamily: 'Inter, sans-serif' }}>
                   <Flag size={15} /> Report Profile
                 </button>
               </div>
@@ -189,6 +184,7 @@ export default function ProfileViewPage() {
           </div>
         )}
 
+        {/* Avatar */}
         <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'rgba(200,150,45,0.1)', border: '2px solid rgba(200,150,45,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
           {profile.personalDetails?.profilePictureUrl
             ? <img src={profile.personalDetails.profilePictureUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -204,7 +200,32 @@ export default function ProfileViewPage() {
             {profile.familyDetails?.city && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><MapPin size={13} color="#c8962d" />{profile.familyDetails.city}</span>}
             {profile.employmentDetails?.jobRole && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><Briefcase size={13} color="#c8962d" />{profile.employmentDetails.jobRole}</span>}
           </div>
-          {!isOwnProfile && <InterestButton profileId={userId} />}
+
+          {/* Action buttons */}
+          {!isOwnProfile && (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <InterestButton profileId={userId} />
+              <button
+                onClick={handleMessage}
+                disabled={startingChat}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,150,45,0.3)',
+                  color: '#c8962d', padding: '10px 20px', borderRadius: 10,
+                  cursor: startingChat ? 'default' : 'pointer', fontSize: 14,
+                  fontFamily: 'Inter, sans-serif', fontWeight: 600, transition: 'all 0.2s',
+                  opacity: startingChat ? 0.7 : 1,
+                }}
+                onMouseEnter={e => { if (!startingChat) { e.currentTarget.style.background = 'rgba(200,150,45,0.15)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.5)'; }}}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.3)'; }}
+              >
+                {startingChat
+                  ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
+                  : <MessageCircle size={15} />}
+                {startingChat ? 'Opening...' : 'Message'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
