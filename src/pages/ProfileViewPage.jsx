@@ -151,6 +151,15 @@ export default function ProfileViewPage() {
   const age = profile.dateOfBirth ? Math.floor((new Date() - new Date(profile.dateOfBirth)) / (365.25 * 24 * 3600 * 1000)) : null;
   const isOwnProfile = currentUser?.id === userId;
 
+  // Inline button style — bypasses btn-interest class width issues
+  const btnBase = {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '10px 20px', borderRadius: 10, border: 'none',
+    cursor: 'pointer', fontWeight: 600, fontSize: 14,
+    fontFamily: 'Inter, sans-serif', transition: 'all 0.2s',
+    whiteSpace: 'nowrap',
+  };
+
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Inter:wght@400;500;600&display=swap');`}</style>
@@ -191,7 +200,7 @@ export default function ProfileViewPage() {
             : <User size={48} color="rgba(200,150,45,0.5)" />}
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h1 style={{ fontSize: 34, fontWeight: 700, color: '#f5f0e8', fontFamily: "'Cormorant Garamond', serif", marginBottom: 4 }}>
             {profile.firstName} {profile.lastName?.[0]}.
           </h1>
@@ -201,27 +210,25 @@ export default function ProfileViewPage() {
             {profile.employmentDetails?.jobRole && <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a8f7e', fontSize: 14 }}><Briefcase size={13} color="#c8962d" />{profile.employmentDetails.jobRole}</span>}
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons — both inline-flex, no class width interference */}
           {!isOwnProfile && (
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <InterestButton profileId={userId} />
               <button
                 onClick={handleMessage}
                 disabled={startingChat}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(200,150,45,0.3)',
-                  color: '#c8962d', padding: '10px 20px', borderRadius: 10,
-                  cursor: startingChat ? 'default' : 'pointer', fontSize: 14,
-                  fontFamily: 'Inter, sans-serif', fontWeight: 600, transition: 'all 0.2s',
+                  ...btnBase,
+                  background: 'rgba(255,255,255,0.07)',
+                  border: '1px solid rgba(200,150,45,0.3)',
+                  color: '#c8962d',
                   opacity: startingChat ? 0.7 : 1,
+                  cursor: startingChat ? 'default' : 'pointer',
                 }}
                 onMouseEnter={e => { if (!startingChat) { e.currentTarget.style.background = 'rgba(200,150,45,0.15)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.5)'; }}}
                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = 'rgba(200,150,45,0.3)'; }}
               >
-                {startingChat
-                  ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} />
-                  : <MessageCircle size={15} />}
+                {startingChat ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <MessageCircle size={15} />}
                 {startingChat ? 'Opening...' : 'Message'}
               </button>
             </div>
